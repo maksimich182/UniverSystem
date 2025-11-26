@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using UserService.DataAccess;
 using UserService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +16,10 @@ builder.WebHost.ConfigureKestrel(options =>
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
     });
 });
+
+builder.Services.AddDbContext<UserDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL"))
+        .UseSnakeCaseNamingConvention());
 
 builder.Services.AddGrpc();
 builder.Services.AddGrpcReflection();
