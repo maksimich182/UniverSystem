@@ -1,19 +1,31 @@
-using Microsoft.AspNetCore.Builder;
+
+
+using AuthServices;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
-//builder.Services.AddSwaggerGen()
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+    options.CustomSchemaIds(type => type.ToString());
+});
 builder.Services.AddControllers();
-//builder.Services.AddHttpClient(); AddSwagger
 
-//builder.Services.AddGrpcClient<AuthServices.AuthServiceClient>(options =>)
-//builder.Services.AddGrpcClient<AuthServices.UserServiceClient>(options =>)
-//builder.Services.AddGrpcClient<AuthServices.GradeServiceClient>(options =>)
+builder.Services.AddGrpcClient<AuthService.AuthServiceClient>(options =>
+{
+    options.Address = new Uri(builder.Configuration["Services:AuthService"]);
+});
 
 var app = builder.Build();
 
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseAuthorization();
 app.MapGet("/", () => "Hello World!");
 app.MapControllers();
-//app.UseSwagger();
-//app.UseSwaggerUI();
+
 
 app.Run();
