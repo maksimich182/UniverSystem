@@ -5,6 +5,7 @@ services:
     build: 
       context: ./
       dockerfile: GatewayService/Dockerfile
+    container_name: gateway-service
     ports: ["5000:8080"]
     depends_on: [auth-service, user-service]
     environment:
@@ -16,6 +17,7 @@ services:
     build: 
       context: ./
       dockerfile: AuthService/Dockerfile
+    container_name: auth-service
     ports: ["5001:5005", "5002:5004"]
     depends_on: [postgres, redis]
     environment:
@@ -32,6 +34,7 @@ services:
     build: 
       context: ./
       dockerfile: UserService/Dockerfile
+    container_name: user-service
     ports: ["5003:5005", "5006:5004"]
     depends_on: [postgres, redis]
     environment:
@@ -40,10 +43,12 @@ services:
 
   redis:
     image: redis:7-alpine
+    container_name: redis
     ports: ["6379:6379"]
 
   postgres:
     image: postgres:latest
+    container_name: univer-db
     environment:
       POSTGRES_DB: universystem-db
       POSTGRES_USER: user

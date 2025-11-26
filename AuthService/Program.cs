@@ -41,6 +41,6 @@ var app = builder.Build();
 
 app.MapGrpcReflectionService();
 app.MapGrpcService<AuthGrpcService>();
-app.MapGet("/", () => "Hello World!");
+app.MapGet("/", () => "AuthService");
 
 app.Run();

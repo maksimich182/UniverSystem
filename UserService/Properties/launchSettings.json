@@ -21,11 +21,11 @@
       "launchBrowser": true,
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
       "environmentVariables": {
-        "HTTP_PORT": "5004",
-        "GRPC_PORT": "5005",
-        "ASPNETCORE_URLS": "http://+:5004;http://+:5005"
+        "HTTP_PORT": "5006",
+        "GRPC_PORT": "5003",
+        "ASPNETCORE_URLS": "http://+:5003;http://+:5006"
       },
-      "DockerfileRunArguments": "-p 5004:5004 -p 5005:5005",
+      "DockerfileRunArguments": "-p 5006:5004 -p 5005:5003",
       "publishAllPorts": false
     }
   },

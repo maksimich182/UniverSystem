@@ -30,6 +30,6 @@ app.MapGrpcReflectionService();
 app.MapGrpcService<UserGrpcService>();
 
 
-app.MapGet("/", () => "Hello World!");
+app.MapGet("/", () => "UserService");
 
 app.Run();

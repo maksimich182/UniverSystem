@@ -1,7 +1,12 @@
-
-
 using AuthServices;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Reflection;
+using System.Text;
+using UserServices;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
@@ -9,8 +14,39 @@ builder.Services.AddSwaggerGen(options =>
 {
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
-    options.CustomSchemaIds(type => type.ToString());
+
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "University API Gateway",
+        Version = "v1"
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter 'Bearer' [space] and then your token in the text input below."
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
+
 builder.Services.AddControllers();
 
 builder.Services.AddGrpcClient<AuthService.AuthServiceClient>(options =>
@@ -18,13 +54,17 @@ builder.Services.AddGrpcClient<AuthService.AuthServiceClient>(options =>
     options.Address = new Uri(builder.Configuration["Services:AuthService"]);
 });
 
+builder.Services.AddGrpcClient<UserService.UserServiceClient>(options =>
+{
+    options.Address = new Uri(builder.Configuration["Services:UsersService"]);
+});
+
 var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseAuthorization();
-app.MapGet("/", () => "Hello World!");
+app.MapGet("/", () => "GatewayService");
 app.MapControllers();
 
 

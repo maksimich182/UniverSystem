@@ -39,7 +39,7 @@ public class AuthGrpcService : AuthServices.AuthService.AuthServiceBase
 
     public override async Task<LoginResponse> Login(LoginRequest request, ServerCallContext context)
     {
-        var hash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        
         _logger.LogInformation($"Login attempt for user: {request.Username}");
 
         var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Username == request.Username && u.IsActive);
