@@ -17,6 +17,7 @@ services:
       context: ./
       dockerfile: AuthService/Dockerfile
     ports: ["5001:5005", "5002:5004"]
+    depends_on: [postgres, redis]
     environment:
       - Jwt__Secret=supersecretkey12345678901234567890
       - Jwt__Issuer=UniversityAuthService
@@ -24,7 +25,12 @@ services:
       - Jwt__ExpiryHours=2
       - Ports__Grpc=5005
       - Ports__Http=5004
-      - ConnectionStrings__PostgreSQL=Host=postgres;Database=universystem-db;Username=user;Password=password  
+      - ConnectionStrings__PostgreSQL=Host=postgres;Database=universystem-db;Username=user;Password=password
+      - ConnectionStrings__Redis=redis:6379
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
 
   postgres:
     image: postgres:latest

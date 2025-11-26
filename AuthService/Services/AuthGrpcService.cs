@@ -1,6 +1,7 @@
 ﻿using AuthService.DataAccess;
 using AuthServices;
 using Grpc.Core;
+using Infrastructure.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -14,10 +15,12 @@ public class AuthGrpcService : AuthServices.AuthService.AuthServiceBase
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthGrpcService> _logger;
     private readonly AuthDbContext _dbContext;
+    private readonly IRedisService _redisService;
 
-    public AuthGrpcService(IConfiguration configuration, 
-        ILogger<AuthGrpcService> logger, 
-        AuthDbContext dbContext)
+    public AuthGrpcService(IConfiguration configuration,
+        AuthDbContext dbContext,
+        IRedisService redisService,
+        ILogger<AuthGrpcService> logger)
     {
         _configuration = configuration;
         _logger = logger;
@@ -31,6 +34,7 @@ public class AuthGrpcService : AuthServices.AuthService.AuthServiceBase
 
         _logger.LogInformation("AuthGrpcService initialized with JWT issuer: {Issuer}",
             _configuration["Jwt:Issuer"]);
+        _redisService = redisService;
     }
 
     public override async Task<LoginResponse> Login(LoginRequest request, ServerCallContext context)
@@ -47,7 +51,7 @@ public class AuthGrpcService : AuthServices.AuthService.AuthServiceBase
 
         var token = GenerateJwtToken(user);
 
-        //Redis
+        await _redisService.SetAsync($"session:{user.Id}", token, TimeSpan.FromHours(2));
 
         return new LoginResponse
         {
