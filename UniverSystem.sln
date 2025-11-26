@@ -11,6 +11,11 @@ Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-co
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{CE8736CF-4716-4D07-876C-F7547EE22AD5}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "database", "database", "{61DB6172-A410-4D53-8025-6C698350A05F}"
+	ProjectSection(SolutionItems) = preProject
+		init.sql = init.sql
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,6 +40,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{EEAEA223-9485-4F18-A804-4AC1A10364D4} = {CE8736CF-4716-4D07-876C-F7547EE22AD5}
+		{61DB6172-A410-4D53-8025-6C698350A05F} = {CE8736CF-4716-4D07-876C-F7547EE22AD5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BD524586-CD0D-4509-A5D9-FA271CE970C3}
