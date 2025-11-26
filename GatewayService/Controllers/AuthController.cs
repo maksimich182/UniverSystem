@@ -18,10 +18,6 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
 
-
-
-
-
     /// <summary>
     /// Проверка Swagger
     /// </summary>

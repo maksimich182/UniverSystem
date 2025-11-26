@@ -1,5 +1,7 @@
-﻿using AuthServices;
+﻿using AuthService.DataAccess;
+using AuthServices;
 using Grpc.Core;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -11,20 +13,56 @@ public class AuthGrpcService : AuthServices.AuthService.AuthServiceBase
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthGrpcService> _logger;
+    private readonly AuthDbContext _dbContext;
 
-    public AuthGrpcService(IConfiguration configuration, ILogger<AuthGrpcService> logger)
+    public AuthGrpcService(IConfiguration configuration, 
+        ILogger<AuthGrpcService> logger, 
+        AuthDbContext dbContext)
     {
         _configuration = configuration;
         _logger = logger;
+        _dbContext = dbContext;
+
+        var jwtSecret = _configuration["Jwt:Secret"];
+        if (string.IsNullOrEmpty(jwtSecret))
+        {
+            throw new InvalidOperationException("JWT Secret is not configured");
+        }
+
+        _logger.LogInformation("AuthGrpcService initialized with JWT issuer: {Issuer}",
+            _configuration["Jwt:Issuer"]);
     }
 
-    public override Task<LoginResponse> Login(LoginRequest request, ServerCallContext context)
+    public override async Task<LoginResponse> Login(LoginRequest request, ServerCallContext context)
     {
+        var hash = BCrypt.Net.BCrypt.HashPassword(request.Password);
         _logger.LogInformation($"Login attempt for user: {request.Username}");
-        return base.Login(request, context);
+
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Username == request.Username && u.IsActive);
+
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid credentioals"));
+        }
+
+        var token = GenerateJwtToken(user);
+
+        //Redis
+
+        return new LoginResponse
+        {
+            Token = token,
+            User = new User
+            {
+                Id = user.Id.ToString(),
+                Username = user.Username,
+                Email = user.Email,
+                Role = user.Role
+            }
+        };
     }
 
-    private string GenerateJwtToken(User user)
+    private string GenerateJwtToken(DataAccess.Models.User user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Secret"]);

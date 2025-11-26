@@ -44,15 +44,16 @@ CREATE TABLE IF NOT EXISTS grades (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-INSERT INTO users (username, password_hash, email, role) VALUES 
-('student1', '$2a$11$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'student1@university.ru', 'student'),
-('teacher1', '$2a$11$qS.kS2ozn/AM3/X2qDHDEu2msdE6L42kO9V4Ee8o8Cs5c5K8Zx8/O', 'teacher1@university.ru', 'teacher');
+INSERT INTO users (id, username, password_hash, email, role) VALUES 
+('11111111-1111-1111-1111-111111111111', 'student1', '$2a$11$rfSGzVYqENm6PS5/xQfXZOUd1fqsLC0ZZF/7R4n2zMZpKvCJQVO5G', 'student1@university.ru', 'student'),
+('22222222-2222-2222-2222-222222222222', 'teacher1', '$2a$11$.AIMXqmHk6crfIKPt.wPJ.J.aePADnYooSJXRA4iYHD.ohbVzwzOK', 'teacher1@university.ru', 'teacher');
 
-INSERT INTO students (user_id, first_name, last_name, group_name, faculty) VALUES 
-('1', 'Евстигней', 'Абрикосов', 'ИТ-101', 'Информационные технологии');
+INSERT INTO students (id, user_id, first_name, last_name, group_name, faculty) VALUES 
+('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Евстигней', 'Абрикосов', 'ИТ-101', 'Информационные технологии');
 
-INSERT INTO teachers (user_id, first_name, last_name, department) VALUES 
-('2', 'Фома', 'Киняев', 'Кафедра информатики');
+INSERT INTO teachers (id, user_id, first_name, last_name, department) VALUES 
+('44444444-4444-4444-4444-444444444444', '22222222-2222-2222-2222-222222222222', 'Фома', 'Киняев', 'Кафедра информатики');
 
-INSERT INTO courses (name, teacher_id) VALUES 
-('Программирование', '44444444-4444-4444-4444-444444444444');
+INSERT INTO courses (id, name, teacher_id) VALUES 
+('55555555-5555-5555-5555-555555555555', 'Программирование', '44444444-4444-4444-4444-444444444444');
+

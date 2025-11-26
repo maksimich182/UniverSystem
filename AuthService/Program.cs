@@ -1,4 +1,6 @@
+using AuthService.DataAccess;
 using AuthService.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +22,17 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.AddGrpcReflection();
 builder.Services.AddGrpc();
 
+builder.Services.AddDbContext<AuthDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL"))
+    .UseSnakeCaseNamingConvention());
+
 var app = builder.Build();
+
+//using (var scope = app.Services.CreateScope())
+//{
+//    var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+//    db.Database.Migrate();
+//}
 
 app.MapGrpcReflectionService();
 app.MapGrpcService<AuthGrpcService>();
