@@ -9,13 +9,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls();
 builder.WebHost.ConfigureKestrel(options =>
 {
-    // Настраиваем endpoint для gRPC
     options.ListenAnyIP(int.Parse(builder.Configuration["Ports:Grpc"]), listenOptions =>
     {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
     });
 
-    // Опционально: можно добавить HTTP для тестов
     options.ListenAnyIP(int.Parse(builder.Configuration["Ports:Http"]), listenOptions =>
     {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
