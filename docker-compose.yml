@@ -7,10 +7,11 @@ services:
       dockerfile: GatewayService/Dockerfile
     container_name: gateway-service
     ports: ["5000:8080"]
-    depends_on: [auth-service, user-service]
+    depends_on: [auth-service, user-service, grade-service]
     environment:
       - Services__AuthService=http://auth-service:5005
       - Services__UserService=http://user-service:5005
+      - Services__GradeService=http://grade-service:5005
 
 
   auth-service:
@@ -36,12 +37,25 @@ services:
       dockerfile: UserService/Dockerfile
     container_name: user-service
     ports: ["5003:5005", "5006:5004"]
-    depends_on: [postgres, redis]
+    depends_on: [postgres, redis, auth-service]
     environment:
       - Ports__Grpc=5005
       - Ports__Http=5004
       - ConnectionStrings__PostgreSQL=Host=postgres;Database=universystem-db;Username=user;Password=password
       - ConnectionStrings__Redis=redis:6379
+
+  grade-service:
+    build: 
+      context: ./
+      dockerfile: GradeService/Dockerfile
+    container_name: grade-service
+    ports: ["5007:5005", "5008:5004"]
+    depends_on: [postgres, redis, auth-service]
+    environment:
+      - Ports__Grpc=5005
+      - Ports__Http=5004
+      # - ConnectionStrings__PostgreSQL=Host=postgres;Database=universystem-db;Username=user;Password=password
+      # - ConnectionStrings__Redis=redis:6379
 
   redis:
     image: redis:7-alpine
