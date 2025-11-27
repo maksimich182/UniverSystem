@@ -1,4 +1,5 @@
 using Infrastructure.Abstractions;
+using Infrastructure.Realisations;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using UserService.DataAccess;
@@ -21,7 +22,7 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis")));
-builder.Services.AddScoped<IRedisService, IRedisService>();
+builder.Services.AddScoped<IRedisService, RedisService>();
 
 builder.Services.AddDbContext<UserDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL"))

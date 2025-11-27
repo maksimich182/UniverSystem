@@ -1,4 +1,5 @@
 using AuthServices;
+using GradeServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.Extensions.DependencyInjection;
@@ -57,6 +58,11 @@ builder.Services.AddGrpcClient<AuthService.AuthServiceClient>(options =>
 builder.Services.AddGrpcClient<UserService.UserServiceClient>(options =>
 {
     options.Address = new Uri(builder.Configuration["Services:UserService"]);
+});
+
+builder.Services.AddGrpcClient<GradeService.GradeServiceClient>(options =>
+{
+    options.Address = new Uri(builder.Configuration["Services:GradeService"]);
 });
 
 var app = builder.Build();
