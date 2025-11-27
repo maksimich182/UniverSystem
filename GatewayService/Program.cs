@@ -56,7 +56,7 @@ builder.Services.AddGrpcClient<AuthService.AuthServiceClient>(options =>
 
 builder.Services.AddGrpcClient<UserService.UserServiceClient>(options =>
 {
-    options.Address = new Uri(builder.Configuration["Services:UsersService"]);
+    options.Address = new Uri(builder.Configuration["Services:UserService"]);
 });
 
 var app = builder.Build();
