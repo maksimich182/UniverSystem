@@ -21,6 +21,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Protobuf Include="Protos\grade.proto" GrpcService="Server" />
 	</ItemGroup>
 

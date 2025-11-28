@@ -55,6 +55,7 @@ services:
       - Ports__Grpc=5005
       - Ports__Http=5004
       - ConnectionStrings__PostgreSQL=Host=postgres;Database=universystem-db;Username=user;Password=password
+      - Kafka__Broker=broker-1:9091
 
   redis:
     image: redis:7-alpine
@@ -72,6 +73,73 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  zookeeper:
+    image: 'confluentinc/cp-zookeeper:7.3.2'
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_SERVER_ID: '1'
+      ZOOKEEPER_SERVERS: 'zookeeper:2888:3888'
+      ZOOKEEPER_CLIENT_PORT: '2181'
+      ZOOKEEPER_PEER_PORT: '2888'
+      ZOOKEEPER_LEADER_PORT: '3888'
+      ZOOKEEPER_INIT_LIMIT: '10'
+      ZOOKEEPER_SYNC_LIMIT: '5'
+      ZOOKEEPER_MAX_CLIENT_CONNS: '5'
+      ZOOKEEPER_TICK_TIME: 2000
+          
+  broker-1:
+    image: 'confluentinc/cp-kafka:7.3.2'
+    container_name: broker-1
+    depends_on:
+      - zookeeper
+    ports:
+      - "29091:29091"
+    environment:
+      KAFKA_BROKER_ID: '1'
+      KAFKA_BROKER_RACK: '1'
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENERS: 'LISTENER_INTERNAL://:9091,LISTENER_LOCAL://:29091'
+      KAFKA_ADVERTISED_LISTENERS: 'LISTENER_INTERNAL://broker-1:9091,LISTENER_LOCAL://localhost:29091'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'LISTENER_INTERNAL'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'LISTENER_INTERNAL:PLAINTEXT,LISTENER_LOCAL:PLAINTEXT'
+      KAFKA_DEFAULT_REPLICATION_FACTOR: '2'
+
+  broker-2:
+    image: 'confluentinc/cp-kafka:7.3.2'
+    container_name: broker-2
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: '2'
+      KAFKA_BROKER_RACK: '2'
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENERS: 'LISTENER_INTERNAL://:9091,LISTENER_LOCAL://:29092'
+      KAFKA_ADVERTISED_LISTENERS: 'LISTENER_INTERNAL://broker-2:9091,LISTENER_LOCAL://localhost:29092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'LISTENER_INTERNAL'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'LISTENER_INTERNAL:PLAINTEXT,LISTENER_LOCAL:PLAINTEXT'
+      KAFKA_DEFAULT_REPLICATION_FACTOR: '2'
+        
+  broker-3:
+    image: 'confluentinc/cp-kafka:7.3.2'
+    container_name: broker-3
+    depends_on:
+      - zookeeper
+    ports:
+      - "29093:29093"
+    environment:
+      KAFKA_BROKER_ID: '3'
+      KAFKA_BROKER_RACK: '3'
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENERS: 'LISTENER_INTERNAL://:9091,LISTENER_LOCAL://:29093'
+      KAFKA_ADVERTISED_LISTENERS: 'LISTENER_INTERNAL://broker-3:9091,LISTENER_LOCAL://localhost:29093'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'LISTENER_INTERNAL'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'LISTENER_INTERNAL:PLAINTEXT,LISTENER_LOCAL:PLAINTEXT'
+      KAFKA_DEFAULT_REPLICATION_FACTOR: '2'
 
 volumes:
   postgres_data:

@@ -1,6 +1,8 @@
 ﻿using GradeService.DataAccess;
+using GradeService.DataAccess.Models;
 using GradeServices;
 using Grpc.Core;
+using Infrastructure.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
 namespace GradeService.Services;
@@ -8,15 +10,17 @@ namespace GradeService.Services;
 public class GradeGrpcService : GradeServices.GradeService.GradeServiceBase
 {
     private readonly GradeDbContext _dbContext;
+    private readonly IKafkaProducer _kafkaProducer;
     private readonly ILogger<GradeGrpcService> _logger;
 
-    public GradeGrpcService(GradeDbContext dbContext, 
+    public GradeGrpcService(GradeDbContext dbContext,
+        IKafkaProducer kafkaProducer,
         ILogger<GradeGrpcService> logger)
     {
         _dbContext = dbContext;
+        _kafkaProducer = kafkaProducer;
         _logger = logger;
     }
-
 
     public override async Task<AddGradeResponse> AddGrade(AddGradeRequest request, ServerCallContext context)
     {
@@ -41,7 +45,15 @@ public class GradeGrpcService : GradeServices.GradeService.GradeServiceBase
         _dbContext.Grades.Add(grade);
         await _dbContext.SaveChangesAsync();
 
-        //Kafka
+        await _kafkaProducer.ProduceAsync("grade-events", new
+        {
+            GradeId = grade.Id,
+            StudentId = grade.StudentId,
+            CourseId = grade.CourseId,
+            GradeValue = grade.GradeValue,
+            TeacherId = grade.TeacherId,
+            TimeStamp = DateTime.UtcNow
+        });
 
         _logger.LogInformation($"Grade add successfully: {grade.Id}");
 
@@ -59,7 +71,7 @@ public class GradeGrpcService : GradeServices.GradeService.GradeServiceBase
             .Include(g => g.Teacher)
             .Where(g => g.StudentId == Guid.Parse(request.StudentId))
             .OrderByDescending(g => g.GradeDate)
-            .Select(g => new Grade
+            .Select(g => new GradeServices.Grade
             {
                 Id = g.Id.ToString(),
                 CourseName = g.Course.Name,
