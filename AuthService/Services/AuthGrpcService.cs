@@ -44,6 +44,8 @@ public class AuthGrpcService : AuthServices.AuthService.AuthServiceBase
 
         var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Username == request.Username && u.IsActive);
 
+        var hash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid credentioals"));
