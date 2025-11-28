@@ -53,6 +53,7 @@ public class UsersController : ControllerBase
                 case GetUserProfileResponse.ProfileOneofCase.Student:
                     profile = new
                     {
+                        student_id = response.Student.StudentId,
                         first_name = response.Student.FirstName,
                         last_name = response.Student.LastName,
                         group_name = response.Student.GroupName,
@@ -62,6 +63,7 @@ public class UsersController : ControllerBase
                 case GetUserProfileResponse.ProfileOneofCase.Teacher:
                     profile = new
                     {
+                        teacher_id = response.Teacher.TeacherId,
                         first_name = response.Teacher.FirstName,
                         last_name = response.Teacher.LastName,
                         department = response.Teacher.Department

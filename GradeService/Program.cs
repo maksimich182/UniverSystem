@@ -1,4 +1,6 @@
+using GradeService.DataAccess;
 using GradeService.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +16,10 @@ builder.WebHost.ConfigureKestrel(options =>
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
     });
 });
+
+builder.Services.AddDbContext<GradeDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL"))
+    .UseSnakeCaseNamingConvention());
 
 builder.Services.AddGrpcReflection();
 builder.Services.AddGrpc();

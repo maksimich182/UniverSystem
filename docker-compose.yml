@@ -54,8 +54,7 @@ services:
     environment:
       - Ports__Grpc=5005
       - Ports__Http=5004
-      # - ConnectionStrings__PostgreSQL=Host=postgres;Database=universystem-db;Username=user;Password=password
-      # - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__PostgreSQL=Host=postgres;Database=universystem-db;Username=user;Password=password
 
   redis:
     image: redis:7-alpine

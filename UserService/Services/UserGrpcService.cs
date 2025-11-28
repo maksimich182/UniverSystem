@@ -67,6 +67,7 @@ public class UserGrpcService : UserServices.UserService.UserServiceBase
                 {
                     response.Student = new StudentProfile
                     {
+                        StudentId = student.Id.ToString(),
                         FirstName = student.FirstName,
                         LastName = student.LastName,
                         GroupName = student.GroupName,
@@ -81,6 +82,7 @@ public class UserGrpcService : UserServices.UserService.UserServiceBase
                 {
                     response.Teacher = new TeacherProfile
                     {
+                        TeacherId = teacher.Id.ToString(),
                         FirstName = teacher.FirstName,
                         LastName = teacher.LastName,
                         Department = teacher.Department

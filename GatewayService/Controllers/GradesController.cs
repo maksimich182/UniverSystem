@@ -2,8 +2,10 @@
 using Grpc.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UserServices;
 using static AuthServices.AuthService;
 using static GradeServices.GradeService;
+using static UserServices.UserService;
 
 namespace GatewayService.Controllers;
 
@@ -13,14 +15,17 @@ public class GradesController : ControllerBase
 {
     private readonly GradeServiceClient _gradeClient;
     private readonly AuthServiceClient _authClient;
+    private readonly UserServiceClient _userClient;
     private readonly ILogger<GradesController> _logger;
 
     public GradesController(GradeServiceClient gradeClient,
         AuthServiceClient authClient,
+        UserServiceClient userClient,
         ILogger<GradesController> logger)
     {
         _gradeClient = gradeClient;
         _authClient = authClient;
+        _userClient = userClient;
         _logger = logger;
     }
 
@@ -40,12 +45,18 @@ public class GradesController : ControllerBase
             if (!validationResponse.IsValid || validationResponse.Role != "teacher")
                 return Forbid();
 
+            var teacherResponse = await _userClient.GetUserProfileAsync(
+            new UserServices.GetUserProfileRequest
+            {
+                UserId = validationResponse.UserId
+            });
+
             var response = await _gradeClient.AddGradeAsync(new GradeServices.AddGradeRequest
             {
                 StudentId = request.StudentId,
                 CourseId = request.CourseId,
                 GradeValue = request.GradeValue,
-                TeacherId = validationResponse.UserId
+                TeacherId = teacherResponse.Teacher.TeacherId
             });
 
             return Ok(new
