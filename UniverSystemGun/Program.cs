@@ -7,6 +7,7 @@ using GradeServices;
 using static AuthServices.AuthService;
 using static UserServices.UserService;
 using static GradeServices.GradeService;
+using System.Net.Http.Json;
 
 namespace UniverSystemGun;
 
@@ -65,6 +66,7 @@ class Program
         var authChannel = GrpcChannel.ForAddress(AUTH_SERVICE_URI);
         var userChannel = GrpcChannel.ForAddress(USER_SERVICE_URI);
         var gradeChannel = GrpcChannel.ForAddress(GRADE_SERVICE_URI);
+        var httpClient = new HttpClient { BaseAddress = new Uri(GATEWAY_SERVICE_URI) };
 
         var authClient = new AuthServiceClient(authChannel);
         var userClient = new UserServiceClient(userChannel);
@@ -113,10 +115,15 @@ class Program
             .Range(0, DOP)
             .Select(_ => RunGradeTests(gradeClient, authClient, userTokens, fx, rnd, cts.Token));
 
+        var gatewayTasks = Enumerable
+            .Range(0, DOP)
+            .Select(_ => RunGatewayTests(httpClient, userTokens, rnd, cts.Token));
+
         await Task.WhenAll([
             .. authTasks,
             .. userTasks,
-            .. gradeTasks
+            .. gradeTasks,
+            .. gatewayTasks
         ]);
 
         Console.WriteLine("Load testing completed");
@@ -124,6 +131,7 @@ class Program
         await authChannel.ShutdownAsync();
         await userChannel.ShutdownAsync();
         await gradeChannel.ShutdownAsync();
+        httpClient.Dispose();
     }
 
     static async Task RunAuthTests(
@@ -245,6 +253,154 @@ class Program
             }
 
             await RandomDelay(random, token);
+        }
+    }
+
+    static async Task RunGatewayTests(
+        HttpClient httpClient,
+        Dictionary<string, string> userTokens,
+        Random random,
+        CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            try
+            {
+                if (!userTokens.Any())
+                {
+                    await Task.Delay(1000, token);
+                    continue;
+                }
+
+                // Выбираем случайный тип HTTP запроса к Gateway
+                var requestType = random.Next(4);
+                switch (requestType)
+                {
+                    case 0:
+                        // GET /api/users/{id}
+                        await TestGetUserProfile(httpClient, userTokens, random, token);
+                        break;
+
+                    case 1:
+                        // GET /api/grades/student/{studentId}
+                        await TestGetStudentGrades(httpClient, userTokens, random, token);
+                        break;
+
+                    case 2:
+                        // POST /api/grades (только для преподавателей)
+                        await TestAddGrade(httpClient, userTokens, random, token);
+                        break;
+
+                    case 3:
+                        // POST /api/auth/login
+                        await TestLoginViaGateway(httpClient, random, token);
+                        break;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{nameof(RunGatewayTests)} HTTP request failed: {ex.Message}");
+            }
+
+            await RandomDelay(random, token);
+        }
+    }
+
+    static async Task TestGetUserProfile(HttpClient httpClient, Dictionary<string, string> userTokens, Random random, CancellationToken token)
+    {
+        var tokenEntry = userTokens.ElementAt(random.Next(userTokens.Count));
+        var authToken = tokenEntry.Value;
+
+        var userId = GetRandomUserId(random);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/users/{userId}");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+
+        var response = await httpClient.SendAsync(request, token);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"{nameof(RunGatewayTests)} User profile retrieved via HTTP for {userId}");
+        }
+        else
+        {
+            Console.WriteLine($"{nameof(RunGatewayTests)} Failed to get user via HTTP: {response.StatusCode}");
+        }
+    }
+
+    static async Task TestGetStudentGrades(HttpClient httpClient, Dictionary<string, string> userTokens, Random random, CancellationToken token)
+    {
+        var tokenEntry = userTokens.ElementAt(random.Next(userTokens.Count));
+        var authToken = tokenEntry.Value;
+
+        var studentId = StudentIds[random.Next(StudentIds.Count)];
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/grades/student/{studentId}");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+
+        var response = await httpClient.SendAsync(request, token);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"{nameof(RunGatewayTests)} Grades retrieved via HTTP for student {studentId}");
+        }
+        else
+        {
+            Console.WriteLine($"{nameof(RunGatewayTests)} Failed to get grades via HTTP: {response.StatusCode}");
+        }
+    }
+
+    static async Task TestAddGrade(HttpClient httpClient, Dictionary<string, string> userTokens, Random random, CancellationToken token)
+    {
+        var teacherTokens = userTokens.Where(kv => kv.Key.StartsWith("teacher"))
+                                     .ToDictionary(kv => kv.Key, kv => kv.Value);
+
+        if (!teacherTokens.Any()) return;
+
+        var teacherToken = teacherTokens.ElementAt(random.Next(teacherTokens.Count)).Value;
+
+        var addGradeRequest = new
+        {
+            StudentId = StudentIds[random.Next(StudentIds.Count)],
+            CourseId = CourseIds[random.Next(CourseIds.Count)],
+            GradeValue = random.Next(MIN_GRADE_VALUE, MAX_GRADE_VALUE + 1)
+        };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/grades");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", teacherToken);
+        request.Content = JsonContent.Create(addGradeRequest);
+
+        var response = await httpClient.SendAsync(request, token);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"{nameof(RunGatewayTests)} Grade added successfully via HTTP");
+        }
+        else
+        {
+            Console.WriteLine($"{nameof(RunGatewayTests)} Failed to add grade via HTTP: {response.StatusCode}");
+        }
+    }
+
+    static async Task TestLoginViaGateway(HttpClient httpClient, Random random, CancellationToken token)
+    {
+        var testUser = TestUsers[random.Next(TestUsers.Count)];
+
+        var loginRequest = new { Username = testUser.Username, Password = testUser.Password };
+
+        var response = await httpClient.PostAsJsonAsync("/api/auth/login", loginRequest, token);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"{nameof(RunGatewayTests)} Login successful via Gateway HTTP");
+        }
+        else
+        {
+            Console.WriteLine($"{nameof(RunGatewayTests)} Login failed via Gateway HTTP: {response.StatusCode}");
         }
     }
 

@@ -7,6 +7,7 @@ using Serilog;
 using Prometheus;
 using AnaliticsService.Services;
 using Serilog.Sinks.Graylog;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,11 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Services.AddSerilog();
 
+builder.Services.AddOpenTelemetry()
+    .WithTracing(cfg => 
+    cfg.AddAspNetCoreInstrumentation()
+    .AddConsoleExporter());
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -29,7 +35,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<GradeEventsConsumerService>();
 builder.Services.AddScoped<IKafkaConsumer, GradeEventsKafkaConsumer>();
 
-builder.Services.AddScoped<UniversityMetrics>();
+builder.Services.AddMetrics()
+    .AddScoped<UniversityMetrics>();
 
 builder.Services.AddScoped<IGradeAnalyticsService, GradeAnalyticsService>();
 

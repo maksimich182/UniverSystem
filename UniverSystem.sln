@@ -10,6 +10,10 @@ EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{EEAEA223-9485-4F18-A804-4AC1A10364D4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{CE8736CF-4716-4D07-876C-F7547EE22AD5}"
+	ProjectSection(SolutionItems) = preProject
+		.env = .env
+		prometheus.yml = prometheus.yml
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "database", "database", "{61DB6172-A410-4D53-8025-6C698350A05F}"
 	ProjectSection(SolutionItems) = preProject

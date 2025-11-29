@@ -5,6 +5,11 @@ using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Npgsql;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using System.Reflection;
 using System.Text;
 using UserServices;
@@ -47,6 +52,26 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+
+var jaegerHost = builder.Configuration["Jaeger:Host"];
+var jaegerPort = int.Parse(builder.Configuration["Jaeger:Port"]);
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(cfg =>
+    cfg.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("gateway-service"))
+    .AddAspNetCoreInstrumentation()
+    .AddHttpClientInstrumentation(options =>
+    {
+        options.RecordException = true;
+    })
+    .AddNpgsql()
+    .AddJaegerExporter(options =>
+    {
+        options.AgentHost = jaegerHost;
+        options.AgentPort = jaegerPort;
+        options.Protocol = JaegerExportProtocol.UdpCompactThrift;
+        options.ExportProcessorType = ExportProcessorType.Simple;
+    }));
 
 builder.Services.AddControllers();
 
