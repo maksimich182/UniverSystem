@@ -13,9 +13,15 @@ EXPOSE ${HTTP_PORT} ${GRPC_PORT}
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
 COPY ["GradeService/GradeService.csproj", "GradeService/"]
+COPY ["Infrastructure/Infrastructure.csproj", "Infrastructure/"]
+
 RUN dotnet restore "./GradeService/GradeService.csproj"
+RUN dotnet restore "./GradeService/GradeService.csproj"
+
 COPY . .
+
 WORKDIR "/src/GradeService"
 RUN dotnet build "./GradeService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 

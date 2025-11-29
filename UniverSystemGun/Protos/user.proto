@@ -1,0 +1,41 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "UserServices";
+
+service UserService {
+	rpc GetUserProfile (GetUserProfileRequest) returns (GetUserProfileResponse);
+}
+
+message GetUserProfileRequest{
+	string user_id =1;
+}
+
+message GetUserProfileResponse{
+	User user = 1;
+	oneof profile{
+		StudentProfile student = 2;
+		TeacherProfile teacher = 3;
+	}
+}
+
+message StudentProfile{
+	string student_id = 1;
+	string first_name = 2;
+	string last_name = 3;
+	string group_name = 4;
+	string faculty = 5;
+}
+
+message TeacherProfile{
+	string teacher_id = 1;
+	string first_name = 2;
+	string last_name = 3;
+	string department = 4;
+}
+
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string role = 4;
+}

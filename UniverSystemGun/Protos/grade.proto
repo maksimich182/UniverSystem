@@ -1,0 +1,36 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "GradeServices";
+
+service GradeService{
+	rpc AddGrade (AddGradeRequest) returns (AddGradeResponse);
+	rpc GetStudentGrades (GetStudentGradesRequest) returns (GetStudentGradesResponse);
+}
+
+message AddGradeRequest{
+	string student_id = 1;
+	string course_id = 2;
+	int32 grade_value = 3;
+	string teacher_id = 4;
+}
+
+message AddGradeResponse{
+	bool success = 1;
+	string grade_id = 2;
+}
+
+message GetStudentGradesRequest{
+	string student_id = 1;
+}
+
+message GetStudentGradesResponse{
+	repeated Grade grades = 1;
+}
+
+message Grade {
+	string id = 1;
+	string course_name = 2;
+	int32 grade_value = 3;
+	string grade_date = 4;
+	string teacher_name = 5;
+}

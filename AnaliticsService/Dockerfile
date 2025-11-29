@@ -8,10 +8,18 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
 COPY ["AnaliticsService/AnaliticsService.csproj", "AnaliticsService/"]
+COPY ["Infrastructure/Infrastructure.csproj", "Infrastructure/"]
+COPY ["Analytics/Analytics.csproj", "Analytics/"]
+
 RUN dotnet restore "./AnaliticsService/AnaliticsService.csproj"
+RUN dotnet restore "Infrastructure/Infrastructure.csproj"
+RUN dotnet restore "Analytics/Analytics.csproj"
+
 COPY . .
 WORKDIR "/src/AnaliticsService"
+
 RUN dotnet build "./AnaliticsService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish

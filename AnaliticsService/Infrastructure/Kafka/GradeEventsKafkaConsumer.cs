@@ -1,22 +1,25 @@
 ﻿
+using AnaliticsService.Services;
 using Analytics.Realisations;
 using Confluent.Kafka;
+using Infrastructure.Events;
+using System.Text.Json;
 
 namespace AnaliticsService.Infrastructure.Kafka;
 
 public class GradeEventsKafkaConsumer : IKafkaConsumer, IDisposable
 {
     private readonly IConsumer<Ignore, string> _consumer;
-    //private readonly IGradeAnalyticsService _analyticsSertvice;
+    private readonly IServiceProvider _serviceProvider;
     private readonly UniversityMetrics _metrics;
     private readonly ILogger<GradeEventsKafkaConsumer> _logger;
 
     public GradeEventsKafkaConsumer(IConfiguration configuration,
-        //IGradeAnalyticsService analyticsService,
+        IServiceProvider serviceProvider,
         UniversityMetrics metrics,
         ILogger<GradeEventsKafkaConsumer> logger)
     {
-        //_analyticsService = analyticsService;
+        _serviceProvider = serviceProvider;
         _metrics = metrics;
         _logger = logger;
 
@@ -34,11 +37,9 @@ public class GradeEventsKafkaConsumer : IKafkaConsumer, IDisposable
             .Build();
     }
 
-
     public async Task ConsumeGradeEventsAsync(CancellationToken cancellationToken)
     {
         _consumer.Subscribe("grade-events");
-
         _logger.LogInformation("Grade Events Kafka Consumer started for topic: grade-events");
 
         while (!cancellationToken.IsCancellationRequested)
@@ -49,7 +50,11 @@ public class GradeEventsKafkaConsumer : IKafkaConsumer, IDisposable
 
                 if (result != null && result.Topic == "grade-events")
                 {
-                    await ProcessGradeEventAsync(result.Message.Value);
+                    // Для каждого сообщения создаем новый scope
+                    using var scope = _serviceProvider.CreateScope();
+                    var analyticsService = scope.ServiceProvider.GetRequiredService<IGradeAnalyticsService>();
+
+                    await ProcessGradeEventAsync(result.Message.Value, analyticsService);
                     _consumer.Commit(result);
 
                     _logger.LogDebug("Processed grade event message");
@@ -59,15 +64,11 @@ public class GradeEventsKafkaConsumer : IKafkaConsumer, IDisposable
             {
                 break;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing grade event message");
             }
         }
-    }
-    private async Task ProcessGradeEventAsync(string message)
-    {
-        throw new NotImplementedException();
     }
 
     public void Dispose()
@@ -75,4 +76,30 @@ public class GradeEventsKafkaConsumer : IKafkaConsumer, IDisposable
         _consumer?.Close();
         _consumer?.Dispose();
     }
+
+    private async Task ProcessGradeEventAsync(string message, IGradeAnalyticsService analyticsService)
+    {
+        try
+        {
+            var gradeEvent = JsonSerializer.Deserialize<GradeAddedEvent>(message);
+            if (gradeEvent != null)
+            {
+                await analyticsService.ProcessGradeEventAsync(gradeEvent);
+                _logger.LogInformation($"Successfully processed grade event for student: {gradeEvent.StudentId}");
+            }
+            else
+            {
+                _logger.LogWarning($"Failed to deserialize grade event message: {message}");
+            }
+        }
+        catch (JsonException jsonEx)
+        {
+            _logger.LogError(jsonEx, $"JSON deserialization error for grade event message: {message}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error processing grade event message: {message}");
+        }
+    }
 }
+

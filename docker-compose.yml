@@ -57,6 +57,22 @@ services:
       - ConnectionStrings__PostgreSQL=Host=postgres;Database=universystem-db;Username=user;Password=password
       - Kafka__Broker=broker-1:9091
 
+  analytics-service:
+    build: 
+      context: ./
+      dockerfile: AnaliticsService/Dockerfile
+    container_name: analytics-service
+    ports: ["5009:8080"]
+    depends_on:
+      - postgres
+      - broker-1
+      - graylog
+    environment:
+      - ConnectionStrings__PostgreSQL=Host=postgres;Database=universystem-db;Username=user;Password=password
+      - Kafka__Broker=broker-1:9091
+      - Graylog__Host=graylog
+      - Graylog__Port=12201
+
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -141,6 +157,84 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'LISTENER_INTERNAL:PLAINTEXT,LISTENER_LOCAL:PLAINTEXT'
       KAFKA_DEFAULT_REPLICATION_FACTOR: '2'
 
+  # prometheus:
+  #   image: prom/prometheus
+  #   ports: ["9090:9090"]
+  #   volumes:
+  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  
+  # grafana:
+  #   image: grafana/grafana
+  #   ports: ["3000:3000"]
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+
+  graylog:
+    image: "graylog/graylog:6.0.2"
+    depends_on:
+      opensearch:
+        condition: "service_started"
+      mongodb:
+        condition: "service_started"
+    entrypoint: "/usr/bin/tini -- wait-for-it opensearch:9200 --  /docker-entrypoint.sh"
+    environment:
+      GRAYLOG_NODE_ID_FILE: "/usr/share/graylog/data/config/node-id"
+      GRAYLOG_PASSWORD_SECRET: ${GRAYLOG_PASSWORD_SECRET:?Please configure GRAYLOG_PASSWORD_SECRET in the .env file}
+      GRAYLOG_ROOT_PASSWORD_SHA2: ${GRAYLOG_ROOT_PASSWORD_SHA2:?Please configure GRAYLOG_ROOT_PASSWORD_SHA2 in the .env file}
+      GRAYLOG_HTTP_BIND_ADDRESS: "0.0.0.0:9000"
+      GRAYLOG_HTTP_EXTERNAL_URI: "http://localhost:9000/"
+      GRAYLOG_ELASTICSEARCH_HOSTS: "http://opensearch:9200"
+      GRAYLOG_MONGODB_URI: "mongodb://mongodb:27017/graylog"
+    ports:
+      - "5044:5044/tcp"   # Beats
+      - "5140:5140/udp"   # Syslog
+      - "5140:5140/tcp"   # Syslog
+      - "5555:5555/tcp"   # RAW TCP
+      - "5555:5555/udp"   # RAW TCP
+      - "9000:9000/tcp"   # Server API
+      - "12201:12201/tcp" # GELF TCP
+      - "12201:12201/udp" # GELF UDP
+      - "13301:13301/tcp" # Forwarder data
+      - "13302:13302/tcp" # Forwarder config
+    volumes:
+      - "graylog_data:/usr/share/graylog/data/data"
+      - "graylog_journal:/usr/share/graylog/data/journal"
+    restart: "on-failure"
+
+  mongodb:
+    image: "mongo:5.0.0"
+    volumes:
+      - "mongodb_data:/data/db"
+    restart: "on-failure"
+
+  opensearch:
+    image: opensearchproject/opensearch:2.14.0
+    volumes:
+      - es_data:/usr/share/opensearch/data
+    ports:
+      - 9200:9200/tcp
+    environment:
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch
+      - action.auto_create_index:true
+      - compatibility.override_main_response_version:true
+      - discovery.seed_hosts=opensearch
+      - cluster.initial_master_nodes=opensearch
+      - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
+      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - "DISABLE_SECURITY_PLUGIN=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+
 volumes:
   postgres_data:
+  mongodb_data:
+  graylog_data:
+  graylog_journal:
+  es_data:
 

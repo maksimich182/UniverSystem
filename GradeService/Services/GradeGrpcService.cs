@@ -3,6 +3,7 @@ using GradeService.DataAccess.Models;
 using GradeServices;
 using Grpc.Core;
 using Infrastructure.Abstractions;
+using Infrastructure.Events;
 using Microsoft.EntityFrameworkCore;
 
 namespace GradeService.Services;
@@ -45,15 +46,17 @@ public class GradeGrpcService : GradeServices.GradeService.GradeServiceBase
         _dbContext.Grades.Add(grade);
         await _dbContext.SaveChangesAsync();
 
-        await _kafkaProducer.ProduceAsync("grade-events", new
+        var gradeEvent = new GradeAddedEvent
         {
             GradeId = grade.Id,
             StudentId = grade.StudentId,
             CourseId = grade.CourseId,
-            GradeValue = grade.GradeValue,
             TeacherId = grade.TeacherId,
-            TimeStamp = DateTime.UtcNow
-        });
+            GradeValue = grade.GradeValue,
+            Timestamp = DateTime.UtcNow
+        };
+
+        await _kafkaProducer.ProduceAsync("grade-events", gradeEvent);
 
         _logger.LogInformation($"Grade add successfully: {grade.Id}");
 
