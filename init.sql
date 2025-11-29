@@ -108,3 +108,57 @@ INSERT INTO grades (id, student_id, course_id, grade_value, teacher_id, grade_da
 ('66666666-6666-6666-6666-666666666667', '88888888-8888-8888-8888-888888888888', '66666666-6666-6666-6666-666666666666', 5, '44444444-4444-4444-4444-444444444444', '2024-01-20'),
 ('77777777-7777-7777-7777-777777777778', '88888888-8888-8888-8888-888888888888', '77777777-7777-7777-7777-777777777777', 4, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '2024-01-25'),
 ('88888888-8888-8888-8888-888888888889', '88888888-8888-8888-8888-888888888888', '99999999-9999-9999-9999-999999999999', 5, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '2024-01-28');
+
+CREATE TABLE IF NOT EXISTS "GradeEvents" (
+    "Id" UUID PRIMARY KEY,
+    "GradeId" UUID NOT NULL UNIQUE,
+    "StudentId" UUID NOT NULL,
+    "CourseId" UUID NOT NULL,
+    "TeacherId" UUID NOT NULL,
+    "GradeValue" INTEGER NOT NULL CHECK ("GradeValue" >= 1 AND "GradeValue" <= 5),
+    "Timestamp" TIMESTAMP WITH TIME ZONE NOT NULL,
+    "ProcessedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Таблица статистики по курсам
+CREATE TABLE IF NOT EXISTS "CourseStatistics" (
+    "Id" UUID PRIMARY KEY,
+    "CourseId" UUID NOT NULL UNIQUE,
+    "CourseName" TEXT NOT NULL DEFAULT 'Unknown Course',
+    "AverageGrade" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "TotalGrades" INTEGER NOT NULL DEFAULT 0,
+    "ExcellentCount" INTEGER NOT NULL DEFAULT 0,
+    "GoodCount" INTEGER NOT NULL DEFAULT 0,
+    "SatisfactoryCount" INTEGER NOT NULL DEFAULT 0,
+    "UnsatisfactoryCount" INTEGER NOT NULL DEFAULT 0,
+    "LastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Таблица статистики по студентам
+CREATE TABLE IF NOT EXISTS "StudentStatistics" (
+    "Id" UUID PRIMARY KEY,
+    "StudentId" UUID NOT NULL UNIQUE,
+    "AverageGrade" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "TotalGrades" INTEGER NOT NULL DEFAULT 0,
+    "ExcellentCount" INTEGER NOT NULL DEFAULT 0,
+    "GoodCount" INTEGER NOT NULL DEFAULT 0,
+    "LastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Индексы для оптимизации запросов
+CREATE INDEX IF NOT EXISTS "IX_GradeEvents_StudentId" ON "GradeEvents" ("StudentId");
+CREATE INDEX IF NOT EXISTS "IX_GradeEvents_CourseId" ON "GradeEvents" ("CourseId");
+CREATE INDEX IF NOT EXISTS "IX_GradeEvents_Timestamp" ON "GradeEvents" ("Timestamp");
+CREATE INDEX IF NOT EXISTS "IX_GradeEvents_GradeId" ON "GradeEvents" ("GradeId");
+
+CREATE INDEX IF NOT EXISTS "IX_CourseStatistics_CourseId" ON "CourseStatistics" ("CourseId");
+CREATE INDEX IF NOT EXISTS "IX_StudentStatistics_StudentId" ON "StudentStatistics" ("StudentId");
+
+-- Тестовые данные (опционально)
+INSERT INTO "CourseStatistics" ("Id", "CourseId", "CourseName", "AverageGrade", "TotalGrades", "ExcellentCount", "GoodCount", "SatisfactoryCount", "UnsatisfactoryCount") VALUES
+('11111111-1111-1111-1111-111111111111', '55555555-5555-5555-5555-555555555555', 'Программирование', 4.2, 10, 3, 5, 2, 0),
+('22222222-2222-2222-2222-222222222222', '66666666-6666-6666-6666-666666666666', 'Базы данных', 3.8, 8, 1, 4, 3, 0);
+
+INSERT INTO "StudentStatistics" ("Id", "StudentId", "AverageGrade", "TotalGrades", "ExcellentCount", "GoodCount") VALUES
+('33333333-3333-3333-3333-333333333333', '44444444-4444-4444-4444-444444444444', 4.5, 6, 4, 2),
+('44444444-4444-4444-4444-444444444444', '55555555-5555-5555-5555-555555555555', 3.9, 5, 1, 3);
